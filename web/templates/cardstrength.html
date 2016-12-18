@@ -230,13 +230,13 @@
               <input type="text" ng-model="song.seconds" class="form-control" placeholder="total seconds" ng-blur="updateSongForChildren()" ng-keypress="onEnter($event)">
             </div>
             <div class="input-group input-group-sm">
-              <span class="input-group-addon" data-toggle="tooltip" title="percentage of perfect notes you get" data-placement="bottom"><i class="flaticon-achievement"></i></span>
+              <span class="input-group-addon" data-toggle="tooltip" title="percentage of perfect notes achieved" data-placement="bottom"><i class="flaticon-achievement"></i></span>
               <input type="text" ng-model="song.perfects" class="form-control" placeholder="% perfects" ng-blur="updateSongForChildren()" ng-keypress="onEnter($event)">
             </div>
-            <div class="input-group input-group-sm">
+            <!--<div class="input-group input-group-sm">
               <span class="input-group-addon" data-toggle="tooltip" title="number of star notes in song" data-placement="bottom"><i class="flaticon-star"></i></span>
               <input type="text" ng-model="song.stars" class="form-control" placeholder="total star notes" ng-blur="updateSongForChildren()" ng-keypress="onEnter($event)">
-            </div>
+            </div>-->
           </div>
         </div>
       <table id="cards_table" class="table table-bordered table-striped table-hover sortable" data-url="ajaxcards">
@@ -256,15 +256,15 @@
           </thead>
           <tbody>
               {% for card in cards %}
-              <tr ng-controller="CardController" ng-init="skill={{card.raw_skill}};skill.category='{{card.skill}}';on_attr={{card.on_attr}};on_attr_idlz={{card.on_attr_idlz}};calcAvg();calcBest();calcSIS({{card.on_attr}}, '{{card.rarity}}')">
+              <tr ng-controller="CardController" ng-init="skill={{card.raw_skill}};skill.category='{{card.skill}}';on_attr={{card.on_attr}};on_attr_idlz={{card.on_attr_idlz}};calcSkill();calcSIS({{card.on_attr}}, '{{card.rarity}}')">
               <td>{{ card.id }}</td>
               <!--<td><img src="{{ card.round_card_image }}"></td>-->
               <td>
                 <!--<img src={% if card.display_idolized %}"{{card.round_card_image_idolized}}"
                 {% else %}"{{card.round_card_image}}"{% endif %}>-->
-                <a href="{{card|singlecardurl}}" class="text-{{card.attribute}}">{{ card.rarity }} {% if card.is_promo %} {% trans 'Promo' %} 
+                <span class="text-{{card.attribute}}"><a href="{{card|singlecardurl}}">{{ card.rarity }} {% if card.is_promo %} {% trans 'Promo' %} 
                 {% elif card.translated_collection  %} {{ card.translated_collection }}
-                {% endif %} {{ card.name }}</a></td>
+                {% endif %} {{ card.name }}</a></span></td>
               <td>
                 <span class="text-{{card.attribute}}">
                 {% if card.display_idolized %} {{ card.on_attr_idlz }} 
