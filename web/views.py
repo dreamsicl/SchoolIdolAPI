@@ -3262,14 +3262,24 @@ def cardstrength(request):
    pp = pprint.PrettyPrinter(indent=4)
    context = globalContext(request)
    extra_requests_get = {
-       'is_special': 'off',
+       'is_special': 'off'
    }
    context, cards = get_cards_queryset(request=request, context=context, card=None, extra_request_get=extra_requests_get)
    for card in cards:
        if card.is_promo or card.rarity == "N":
            card.display_idolized = True
         
-    
+       # on-attribute stat
+       if card.attribute == "Smile":
+           card.on_attr = card.non_idolized_maximum_statistics_smile
+           card.on_attr_idlz = card.idolized_maximum_statistics_smile
+       elif card.attribute == "Pure":
+           card.on_attr = card.non_idolized_maximum_statistics_pure
+           card.on_attr_idlz = card.idolized_maximum_statistics_pure
+       elif card.attribute == "Cool":
+           card.on_attr = card.non_idolized_maximum_statistics_cool
+           card.on_attr_idlz = card.idolized_maximum_statistics_cool
+            
        # raw skill details
        # corner case: star note activated
     #    if "star" in card['skill_details']:
@@ -3312,6 +3322,6 @@ def cardstrength(request):
                 card.raw_skill['percent'] = float(word.strip("%")) / 100
 
    context['filters'] = get_cards_form_filters(request, settings.CARDS_INFO)
+#    cards = cards.filter(rarity='R') | cards.filter(rarity='SR') | cards.filter(rarity='SSR') | cards.filter(rarity='UR')
    context['cards'] = cards
-   pp.pprint(request.GET)
    return render(request, 'cardstrength.html', context)
