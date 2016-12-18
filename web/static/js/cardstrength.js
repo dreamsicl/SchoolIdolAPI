@@ -1,23 +1,41 @@
-var calcActivations = function (song, skill) {
-    if (skill.type == "notes" || skill.type == "hit" || skill.type == "combo") {
-        return Math.floor(song.notes / skill.interval)
-    }
-    else if (skill.type == "perfects") {
-        return Math.floor(song.notes * song.perfects / skill.interval)
-    }
-    else if (skill.type == "seconds") {
-        return Math.floor(song.seconds / skill.interval)
-    }
-    else {
-        //TODO: handle Snow Maiden Umi
-        return 0
-    }
-}
-
-var calcScoreUpMod = function(song, skillAccumulation) {
-    return Math.floor((skillAccumulation / song.notes) / (0.0125 * (.88 * song.perfects) * Math.floor(song.notes / 2) * 1 * 1.1 * 1.1)) * song.notes;
-}
 angular.module('CardStrength', [])
+    .factory('Calculations', function() {
+        var ret = {};
+
+        ret.activations = function (song, skill) {
+            if (skill.type == "notes" || skill.type == "hit" || skill.type == "combo") {
+                return Math.floor(song.notes / skill.interval)
+            }
+            else if (skill.type == "perfects") {
+                return Math.floor(song.notes * song.perfects / skill.interval)
+            }
+            else if (skill.type == "seconds") {
+                return Math.floor(song.seconds / skill.interval)
+            }
+            else {
+                //TODO: handle Snow Maiden Umi
+                return 0
+            }
+        };
+
+        ret.scoreUpMod = function(song, scoreUp) {
+            return Math.floor(scoreUp / (0.0125 * 1 * Math.floor(song.notes / 2) * 1 * 1.1 * 1.1));
+        };
+
+        ret.plScoreBonus = function(on_attr, song, pl_time) {
+            var pl_proportion_of_song = pl_time < song.seconds ? song.seconds/pl_time : 1
+            var notes_during_pl = Math.floor(song.notes / pl_proportion_of_song);
+            var number_of_greats_during_pl = notes_during_pl - Math.floor(notes_during_pl * song.perfects);
+            // console.debug(pl_time)
+            var note_score_perfect = Math.floor(on_attr * 0.0125 * 1 * Math.floor(song.notes / 2) * 1 * 1.1 * 1.1)
+            var note_score_great = Math.floor(on_attr * 0.0125 * .88 * Math.floor(song.notes / 2) * 1 * 1.1 * 1.1)
+            var score_difference = (note_score_perfect - note_score_great) * number_of_greats_during_pl
+            
+            return ret.scoreUpMod(song, score_difference)
+        }
+
+        return ret;
+    })
     .controller('SkillController', function ($scope) {
         $scope.song = {
             perfects: .85,
@@ -31,12 +49,7 @@ angular.module('CardStrength', [])
         $scope.onEnter = function(keyEvent) {
             if (keyEvent.which == 13) $scope.updateSongForChildren()
         }
-        // $scope.$watch('$scope.song', function(newVal, oldVal) {
-        //     if (newVal !== oldVal) {
-        //         $scope.$broadcast('songUpdate', {"val": newVal})
-        //         console.log("song changed")
-        //     }
-        // })
+
         $scope.equippedSIS = false
         $scope.toggleAllSIS = function () {
             $scope.equippedSIS = !$scope.equippedSIS
@@ -48,23 +61,40 @@ angular.module('CardStrength', [])
             $scope.$broadcast('toggleAllIdlz', {"newIdlzStatus": $scope.idlz})
         }
     })
-    .controller('CardController', function ($scope) {
-        // $scope.skill = {};
-        // $scope.skill.avg = "Loading..."
-        // $scope.skill.best = "Loading..."
+    .controller('CardController', function ($scope, Calculations) {
+        var activations;
         $scope.calcAvg = function () {
             $scope.skill.avg = "Loading..."
-            if ($scope.skill) {
-                $scope.skill.avg = calcActivations($scope.song, $scope.skill) * $scope.skill.percent * $scope.skill.amount
-                $scope.skill.stat_bonus_avg = calcScoreUpMod($scope.song, $scope.skill.avg)
+
+            if (!$scope.skill) return;
+            
+            activations = Calculations.activations($scope.song, $scope.skill);
+            $scope.skill.avg = Math.floor(activations * $scope.skill.percent) * $scope.skill.amount
+            
+            if ($scope.skill.category == "Perfect Lock" || $scope.skill.category.includes("Trick")) {
+                $scope.skill.stat_bonus_avg = Calculations.plScoreBonus($scope.on_attr, $scope.song, $scope.skill.avg)
+            }
+            else if (($scope.skill.category == "Healer" || $scope.skill.category.includes("Yell")) && !$scope.equippedSIS) { 
+                $scope.skill.stat_bonus_avg = 0;
+            }
+            else { // scorer or healer
+                $scope.skill.stat_bonus_avg = Calculations.scoreUpMod($scope.song, $scope.skill.avg)
             }
         }
 
         $scope.calcBest = function () {
             $scope.skill.best = "Loading..."
-            if ($scope.skill) {
-                $scope.skill.best = calcActivations($scope.song, $scope.skill) * $scope.skill.amount 
-                $scope.skill.stat_bonus_best = calcScoreUpMod($scope.song, $scope.skill.best)
+            if (!$scope.skill) return;
+
+            $scope.skill.best = activations * $scope.skill.amount
+            if ($scope.skill.category == "Perfect Lock" || $scope.skill.category == "Total Trick" || $scope.skill.category == "Timer Trick") {
+                $scope.skill.stat_bonus_best = Calculations.plScoreBonus($scope.on_attr, $scope.song, $scope.skill.best)
+            }
+            else if (($scope.skill.category == "Healer" || $scope.skill.category.includes("Yell")) && !$scope.equippedSIS) { 
+                $scope.skill.stat_bonus_best = 0;
+            }
+            else {
+                $scope.skill.stat_bonus_best = Calculations.scoreUpMod($scope.song, $scope.skill.best)
             }
         }
 
@@ -76,20 +106,20 @@ angular.module('CardStrength', [])
                 if ($scope.skill.category == "Score Up") {
                     $scope.sis.avg = $scope.skill.avg * 2.5
                     $scope.sis.best = $scope.skill.best * 2.5
-                    $scope.sis.stat_bonus_avg = calcScoreUpMod($scope.song, $scope.sis.avg)
-                    $scope.sis.stat_bonus_best = calcScoreUpMod($scope.song, $scope.sis.best)
+                    $scope.sis.stat_bonus_avg = Calculations.scoreUpMod($scope.song, $scope.sis.avg)
+                    $scope.sis.stat_bonus_best = Calculations.scoreUpMod($scope.song, $scope.sis.best)
                 }
                 // healer: convert to SU with x480 multiplier
                 else if ($scope.skill.category == "Healer") {
                     $scope.sis.avg = $scope.skill.avg * 480
                     $scope.sis.best = $scope.skill.best * 480
-                    $scope.sis.stat_bonus_avg = calcScoreUpMod($scope.song, $scope.sis.avg)
-                    $scope.sis.stat_bonus_best = calcScoreUpMod($scope.song, $scope.sis.best)
+                    $scope.sis.stat_bonus_avg = Calculations.scoreUpMod($scope.song, $scope.sis.avg)
+                    $scope.sis.stat_bonus_best = Calculations.scoreUpMod($scope.song, $scope.sis.best)
                 }
                 // PLer: + x0.33 on-attribute stat when PL is active
                 else if ($scope.skill.category == "Perfect Lock") {
-                    // $scope.sis.avg = $scope.sis.stat_bonus_avg =  (stat * .33)
-                    // $scope.sis.best = $scope.sis.stat_bonus_best  =  $scope.skill.best * (stat * .33)
+                    $scope.sis.avg = $scope.sis.stat_bonus_avg = Math.floor(stat * .33) / activations
+                    $scope.sis.best = $scope.sis.stat_bonus_best = Math.floor(stat * .33)
                 }
             }
         }
