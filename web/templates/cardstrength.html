@@ -250,13 +250,13 @@
                 <th>{% trans 'Equip SIS?' %}</th>
                 <th>Average Skill Contribution</th>
                 <th>Best Skill Contribution</th>
-                <th>Total On-Attribute Stat w/ Avg Stat Bonus</th>
-                <th>Total On-Attribute Stat w/ Best Stat Bonus</th>
+                <th>{% trans 'Stat + Average Bonus' %}</th>
+                <th>{% trans 'Stat + Best Bonus' %}</th>
               </tr>
           </thead>
           <tbody>
               {% for card in cards %}
-              <tr ng-controller="CardController" ng-init="skill={{card.raw_skill}};skill.category='{{card.skill}}';on_attr={{card.on_attr}};on_attr_idlz={{card.on_attr_idlz}};calcSkill();calcSIS({{card.on_attr}}, '{{card.rarity}}')">
+              <tr ng-controller="CardController" ng-init="skill={{card.raw_skill}};skill.category='{{card.skill}}';on_attr={{card.on_attr}};calcSkill();calcSIS('{{card.rarity}}');calcStatBonus()">
               <td>{{ card.id }}</td>
               <!--<td><img src="{{ card.round_card_image }}"></td>-->
               <td>
@@ -267,9 +267,8 @@
                 {% endif %} {{ card.name }}</a></span></td>
               <td>
                 <span class="text-{{card.attribute}}">
-                {% if card.display_idolized %} {{ card.on_attr_idlz }} 
-                {% else %} {{card.on_attr }}
-                {% endif %}</span></td>
+                  [[ idlz ? on_attr.idlz : on_attr.base ]]
+                </span></td>
               <td class="text-center">
                 {% if card.skill %}
                 <i class="flaticon-{{ card.skill|skillToFlaticon }}" title="{% if LANGUAGE_CODE == 'ja' and card.japanese_skill %}{{ card.japanese_skill }}{% else %}{{ card.skill }}{% endif %}" data-container="body" data-toggle="popover" data-placement="top" data-content="{% if LANGUAGE_CODE == 'ja' and card.japanese_skill_details %}{{ card.japanese_skill_details }}{% elif card.skill_details %}{{ card.skill_details }}{% endif %}" data-trigger="hover"></i>
@@ -289,16 +288,16 @@
                 {% endif %}</td>
               <td>
                 {% if card.skill %}
-                  [[equippedSIS ? sis.avg : skill.avg|number:0]] 
+                  [[equippedSIS ? sis.avg : skill.avg | number:0]]
                   <br><small><b>(+[[equippedSIS ? sis.stat_bonus_avg : skill.stat_bonus_avg|number:0]] <span class="text-{{card.attribute}}">{{card.attribute}}</span>)</b></small>
                 {% endif %}</td>
               <td>
                 {% if card.skill %}
-                [[equippedSIS ? sis.best : skill.best | number:0]] 
+                [[equippedSIS ? sis.best : skill.best | number:0]]
                 <br><small><b>(+[[equippedSIS ? sis.stat_bonus_best : skill.stat_bonus_best|number:0]] <span class="text-{{card.attribute}}">{{card.attribute}}</span>)</b></small>
                 {% endif %}</td>
-              <td></td>
-              <td></td>
+              <td>[[on_attr.avg]]</td>
+              <td>[[on_attr.best]]</td>
               </tr>
               {% endfor %}
           </tbody>

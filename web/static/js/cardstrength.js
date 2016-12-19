@@ -24,15 +24,29 @@ angular.module('CardStrength', [])
             return Math.floor(scoreUp / song.notes / 0.0125);
         };
 
-        ret.plScoreBonus = function(on_attr, song, pl_time) {
+        ret.plScoreBonus = function(on_attr, song, pl_time, type) {
+            // calculate exactly how many notes are estimated to go great -> perfect
             var pl_proportion_of_song = pl_time < song.seconds ? pl_time/song.seconds : 1
-            var transformed_greats_proportion_of_song = Math.floor(song.notes * pl_proportion_of_song) * (1-song.perfects) / song.notes
+            var notes_during_pl = Math.floor(song.notes * pl_proportion_of_song)
+            var transformed_greats_proportion_of_song = notes_during_pl * (1-song.perfects) / song.notes
 
-            var note_score_perfect = Math.floor(on_attr * 0.0125 * 1 * Math.floor(song.notes / 2) * 1 * 1.1 * 1.1)
-            var note_score_great = Math.floor(on_attr * 0.0125 * .88 * Math.floor(song.notes / 2) * 1 * 1.1 * 1.1)
+            // how much the score changed due to greats -> perfects
+            var score_difference = Math.floor(on_attr * 0.0125 * .22 * Math.floor(song.notes / 2) * 1 * 1.1 * 1.1) * transformed_greats_proportion_of_song 
             
-            var score_difference = (note_score_perfect - note_score_great) * transformed_greats_proportion_of_song 
-            
+            if (type == "sis") {
+                var bonus = Math.floor(on_attr * 0.33) // trick stat bonus
+
+                // how much the score changed due to greats -> perfects
+                var trick_greats_bonus = Math.floor(bonus * 0.0125 * .22 * Math.floor(song.notes / 2) * 1 * 1.1 * 1.1) * transformed_greats_proportion_of_song 
+
+                // how many more points perfects give 
+                var perfects_during_pl = notes_during_pl * song.perfects / song.notes
+                //// stat value = bonus bc bonus is the only difference between perfect note w/ and w/o trick active 
+                var trick_perfects_bonus = Math.floor(bonus * 0.0125 * 1 * Math.floor(song.notes / 2) * 1 * 1.1 * 1.1) * perfects_during_pl
+
+                score_difference = trick_greats_bonus + trick_perfects_bonus 
+            }
+
             return ret.scoreUpMod(song, score_difference)
         }
 
@@ -45,7 +59,9 @@ angular.module('CardStrength', [])
             seconds: 125,
             stars: 60
         }
+
         $scope.updateSongForChildren = function () {
+            if ($scope.song.perfects > 1) $scope.song.perfects = 1; 
             $scope.$broadcast('songUpdate', {"song": $scope.song})
         }
         $scope.onEnter = function(keyEvent) {
@@ -75,8 +91,8 @@ angular.module('CardStrength', [])
             $scope.skill.best = activations * $scope.skill.amount
 
             if ($scope.skill.category == "Perfect Lock" || $scope.skill.category.includes("Trick")) {
-                $scope.skill.stat_bonus_avg = Calculations.plScoreBonus($scope.on_attr, $scope.song, $scope.skill.avg)
-                $scope.skill.stat_bonus_best = Calculations.plScoreBonus($scope.on_attr, $scope.song, $scope.skill.best)
+                $scope.skill.stat_bonus_avg = Calculations.plScoreBonus($scope.on_attr.base, $scope.song, $scope.skill.avg)
+                $scope.skill.stat_bonus_best = Calculations.plScoreBonus($scope.on_attr.base, $scope.song, $scope.skill.best)
             }
             else if (($scope.skill.category == "Healer" || $scope.skill.category.includes("Yell")) && !$scope.equippedSIS) { 
                 $scope.skill.stat_bonus_avg = $scope.skill.stat_bonus_best = 0;
@@ -89,7 +105,7 @@ angular.module('CardStrength', [])
 
         // sis calculations 
         $scope.sis = {}
-        $scope.calcSIS = function(stat,rarity) {
+        $scope.calcSIS = function(rarity) {
             if (rarity != 'R' && rarity != 'N') {
                 // score up: SU skill power x2.5
                 if ($scope.skill.category == "Score Up") {
@@ -107,15 +123,32 @@ angular.module('CardStrength', [])
                 }
                 // PLer: + x0.33 on-attribute stat when PL is active
                 else if ($scope.skill.category == "Perfect Lock") {
-                    $scope.sis.avg = $scope.sis.stat_bonus_avg = Math.floor(stat * .33) / activations
-                    $scope.sis.best = $scope.sis.stat_bonus_best = Math.floor(stat * .33)
+                    var bonus = Math.floor($scope.on_attr.base * 0.33)
+                    $scope.sis.avg = Math.floor($scope.skill.avg / $scope.song.seconds * bonus)
+                    $scope.sis.best = Math.floor($scope.skill.best / $scope.song.seconds * bonus)
+
+                    $scope.sis.stat_bonus_avg = Calculations.plScoreBonus($scope.on_attr.base, $scope.song, $scope.skill.avg, "sis")
+                    $scope.sis.stat_bonus_best = Calculations.plScoreBonus($scope.on_attr.base, $scope.song, $scope.skill.best, "sis")
                 }
             }
         }
+
+        $scope.calcStatBonus = function() {
+            if (!$scope.equippedSIS) {
+                $scope.on_attr.avg = $scope.on_attr.base + $scope.skill.stat_bonus_avg
+                $scope.on_attr.best = $scope.on_attr.base + $scope.skill.stat_bonus_best
+            }
+            else {
+                $scope.on_attr.avg = $scope.on_attr.base + $scope.sis.stat_bonus_avg
+                $scope.on_attr.best = $scope.on_attr.base + $scope.sis.stat_bonus_best
+            }
+            
+        }
         $scope.toggleEquipSIS = function() {
             $scope.equippedSIS = !$scope.equippedSIS
+            $scope.calcStatBonus();
         }
-
+        
         $scope.$on('songUpdate', function (event, args) {
             $scope.calcSkill();
             $scope.calcSIS();
