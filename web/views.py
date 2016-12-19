@@ -3277,11 +3277,27 @@ def cardstrength(request):
            card.on_attr['idlz'] = card.idolized_maximum_statistics_smile
        elif card.attribute == "Pure":
            card.on_attr['base'] = card.non_idolized_maximum_statistics_pure
-           card.on_attr_idlz = card.idolized_maximum_statistics_pure
+           card.on_attr['idlz'] = card.idolized_maximum_statistics_pure
        elif card.attribute == "Cool":
            card.on_attr['base'] = card.non_idolized_maximum_statistics_cool
            card.on_attr['idlz'] = card.idolized_maximum_statistics_cool
-            
+    
+       if card.rarity == "R":
+           card.on_attr['base'] += 100
+           card.on_attr['idlz'] += 200
+       elif card.rarity == "SR":
+           card.on_attr['base'] += 250
+           card.on_attr['idlz'] += 500
+       elif card.rarity == "SSR":
+           card.on_attr['base'] += 375
+           card.on_attr['idlz'] += 750
+       elif card.rarity == "UR":
+           card.on_attr['base'] += 500
+           card.on_attr['idlz'] += 1000
+
+       if card.is_promo: 
+           card.on_attr['base'] = card.on_attr['idlz']
+        
        # raw skill details
        # corner case: star note activated
     #    if "star" in card['skill_details']:
