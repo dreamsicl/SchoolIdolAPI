@@ -366,13 +366,14 @@ var dt = $('#cards_table').DataTable({
       scroller: false,  
       "columnDefs": [
         { "orderable": false, "targets": [1,5] },
-        { "type": "num-html", "targets": [0,3,6,7,8,9] }
+        { "type": "num", "targets": 0 },
+        { "type": "html-num", "targets": [3,6,7,8,9] }
       ],
       paging: false,
       processing: true,
       //serverSide: true
-    })
+    });
 $(document).ready(function() {
-dt
+dt;
 })
 </script> {% endblock %}

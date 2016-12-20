@@ -1,4 +1,4 @@
-angular.module('CardStrength', [])
+angular.module('CardStrength', ['datatables'])
     .factory('Calculations', function () {
         var ret = {};
 

@@ -3249,17 +3249,7 @@ def drown(request):
     models.Activity.objects.filter(pk=activity.pk).update(creation=activity.creation - relativedelta(days=1))
     return HttpResponse('')
 
-import pprint 
-import math
-def isnumber(s):
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
-
 def cardstrength(request):
-   pp = pprint.PrettyPrinter(indent=4)
    context = globalContext(request)
    extra_requests_get = {
        'is_special': 'off'
@@ -3316,7 +3306,7 @@ def cardstrength(request):
        numCount = 0
        card.raw_skill = {}#{ "interval": 0, "type": "", "amount": 0, "percent": 0}
        for word in skill_words:
-            if isnumber(word) and numCount < 1:
+            if isinstance(word,float) and numCount < 1:
                 # 1. skill activation interval
                 #   ("for every ## notes/seconds/hit combo/perfects...")
                 card.raw_skill['interval'] = float(word)
@@ -3328,7 +3318,7 @@ def cardstrength(request):
 
                 numCount = numCount + 1
 
-            elif isnumber(word) and numCount < 2:
+            elif isinstance(word,float) and numCount < 2:
                 # 3. skill activation amount
                 #   ("...by ___ points/seconds/stamina")
 
